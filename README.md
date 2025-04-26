@@ -272,6 +272,91 @@ Once the simulation is running, you may hit `Ctrl+C` at any time to exit.
 
 Once the server is running, you may hit `Ctrl+C` at any time to exit.
 
+## Modifications
+
+### producers/models/producer.py
+
+The producer.py file has been successfully completed. Here's a summary of the changes made:
+
+#### Broker Properties Configuration:
+
+Set up the broker properties with the Kafka bootstrap server URL and Schema Registry URL
+Used "PLAINTEXT://localhost:9092" for the Kafka broker
+Used "http://localhost:8081" for the Schema Registry
+
+#### AvroProducer Configuration:
+
+Configured the AvroProducer with the broker properties
+Set the default key and value schemas
+
+#### Topic Creation:
+
+Implemented the create_topic method to create a Kafka topic if it doesn't already exist
+Used the AdminClient to check if the topic exists
+Created the topic with the specified number of partitions and replicas if it doesn't exist
+Added proper error handling and logging
+
+#### Producer Cleanup:
+
+Implemented the close method to flush any pending messages before closing
+Added appropriate logging
+Fixed Duplicate Method:
+Removed the duplicate time_millis method
+
+### producers/models/schemas/arrival_value.json
+
+The schema now includes all the required fields:
+
+* station_id (type: int)
+* train_id (type: string)
+* direction (type: string)
+* line (type: string)
+* train_status (type: string)
+* prev_station_id (type: int)
+* prev_direction (type: string)
+
+The schema follows the Avro format with the appropriate namespace (com.udacity) and record name (arrival.value), similar to the other schema files in the project.
+
+### producers/models/station.py
+
+Changes Made to producers/models/station.py
+
+Uncommented and updated the value schema loading:
+
+The arrival_value.json schema was already defined with all the required fields, so I uncommented the line to load it.
+
+Updated the topic naming convention:
+
+Changed the topic name to follow a consistent pattern: org.chicago.cta.station.arrivals.{station_name}
+
+This matches the pattern seen in the consumer code that listens to these topics.
+
+Set appropriate configuration values:
+
+Added num_partitions=1 and num_replicas=1 which are reasonable defaults for this application.
+
+Implemented the run() method:
+
+Added code to produce an arrival message to Kafka with all required fields from the schema:
+* station_id: The ID of the current station
+* train_id: The ID of the train that arrived
+* direction: The direction of the train ("a" or "b")
+* line: The color of the train line (blue, green, red)
+* train_status: The status of the train (in_service, out_of_service, etc.)
+* prev_station_id: The ID of the previous station (-1 if None)
+* prev_direction: The direction at the previous station (empty string if None)
+
+Added error handling to catch and log any exceptions during message production
+
+Added logging to track when arrival events are successfully emitted
+
+These changes ensure that:
+
+* A Kafka topic is created for each station to track arrival events
+* The station emits an arrival event to Kafka whenever the Station.run() function is called
+* Events emitted to Kafka are paired with the Avro key and value schemas
+* The implementation now properly integrates with the Kafka infrastructure and will emit arrival events that can be consumed by the consumer applications.
+
 ## References
 
 ### Architecture Diagram 
