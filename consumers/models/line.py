@@ -2,7 +2,7 @@
 import json
 import logging
 
-from models import Station
+from .station import Station
 
 
 logger = logging.getLogger(__name__)
@@ -56,24 +56,28 @@ class Line:
 
     def process_message(self, message):
         """Given a kafka message, extract data"""
-        # TODO: Based on the message topic, call the appropriate handler.
-        if True: # Set the conditional correctly to the stations Faust Table
+        topic = message.topic()
+
+        if topic == "org.chicago.cta.stations.table.v1":
             try:
                 value = json.loads(message.value())
                 self._handle_station(value)
             except Exception as e:
                 logger.fatal("bad station? %s, %s", value, e)
-        elif True: # Set the conditional to the arrival topic
+        elif "org.chicago.cta.station.arrivals." in topic:
             self._handle_arrival(message)
-        elif True: # Set the conditional to the KSQL Turnstile Summary Topic
-            json_data = json.loads(message.value())
-            station_id = json_data.get("STATION_ID")
-            station = self.stations.get(station_id)
-            if station is None:
-                logger.debug("unable to handle message due to missing station")
-                return
-            station.process_message(json_data)
+        elif topic == "TURNSTILE_SUMMARY":
+            try:
+                json_data = json.loads(message.value())
+                station_id = json_data.get("STATION_ID")
+                station = self.stations.get(station_id)
+                if station is None:
+                    logger.debug("unable to handle message due to missing station")
+                    return
+                station.process_message(json_data)
+            except Exception as e:
+                logger.error("Error processing turnstile message: %s", e)
         else:
             logger.debug(
-                "unable to find handler for message from topic %s", message.topic
+                "unable to find handler for message from topic %s", topic
             )
